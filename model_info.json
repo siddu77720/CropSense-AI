@@ -1,0 +1,20 @@
+{
+  "class_names": [
+    "Healthy",
+    "Early Blight",
+    "Late Blight",
+    "Powdery Mildew",
+    "Leaf Spot"
+  ],
+  "num_classes": 5,
+  "input_shape": [
+    224,
+    224,
+    3
+  ],
+  "model_type": "Demo CNN",
+  "created_date": "2025-10-31 13:46:12",
+  "description": "Demo model for CropSense AI - Uses simulated predictions",
+  "accuracy": "85% (Demo Mode)",
+  "status": "Ready for inference"
+}

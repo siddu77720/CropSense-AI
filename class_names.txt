@@ -1,0 +1,5 @@
+Healthy
+Early Blight
+Late Blight
+Powdery Mildew
+Leaf Spot

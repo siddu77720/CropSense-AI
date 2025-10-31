@@ -1,0 +1,4 @@
+# Demo model file - Replace with actual trained model
+# This is a placeholder for the TensorFlow model
+# Created: 2025-10-31 13:46:12
+# Classes: Healthy, Early Blight, Late Blight, Powdery Mildew, Leaf Spot

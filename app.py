@@ -12,41 +12,32 @@ st.set_page_config(
 )
 
 # Custom CSS for better styling
+# Custom CSS with semi-transparent background
+# Custom CSS with semi-transparent background
 st.markdown("""
 <style>
+    .stApp {
+        background-image: url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&h=800&fit=crop");
+        background-size: cover;
+        background-position: center;
+    }
+    
+    /* Make content areas semi-transparent */
+    .main .block-container {
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-top: 2rem;
+    }
+    
     .main-header {
         font-size: 3rem;
         color: #2E8B57;
         text-align: center;
         margin-bottom: 2rem;
     }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #228B22;
-        margin-bottom: 1rem;
-    }
-    .disease-card {
-        background-color: #f0f8f0;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid #2E8B57;
-        margin: 1rem 0;
-    }
-    .confidence-high {
-        color: #FF4B4B;
-        font-weight: bold;
-    }
-    .confidence-medium {
-        color: #FFA500;
-        font-weight: bold;
-    }
-    .confidence-low {
-        color: #008000;
-        font-weight: bold;
-    }
 </style>
 """, unsafe_allow_html=True)
-
 # Disease information database
 DISEASE_INFO = {
     "Healthy": {
@@ -83,15 +74,15 @@ class DiseaseDetector:
         self.load_model()
     
     def load_model(self):
-        """Load or create a demo model without downloading weights"""
-        try:
-            # Try to load existing model
-            self.model = tf.keras.models.load_model('crop_disease_model.h5')
-            st.success("✅ AI Model Loaded Successfully!")
-        except:
-            # Create a simple model WITHOUT downloading weights
-            st.info("🔄 Creating lightweight AI model...")
-            self.model = self.create_lightweight_model()
+     """Load or create a demo model without downloading weights"""
+    try:
+        # Try to load existing model
+        self.model = tf.keras.models.load_model('crop_disease_model.h5')
+        st.success("✅ AI Model Loaded Successfully!")
+    except:
+        # Create a simple model WITHOUT downloading weights
+        st.info("🔄 Creating lightweight AI model...")
+        self.model = self.create_lightweight_model()
     
     def create_lightweight_model(self):
         """Create a lightweight model without pre-trained weights"""
@@ -126,7 +117,7 @@ class DiseaseDetector:
         # Resize image
         image = image.resize((224, 224))
         
-        # Convert to array and normalize
+        # Convert to array and normalizedf
         image_array = np.array(image) / 255.0
         
         # Add batch dimension
