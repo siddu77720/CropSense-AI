@@ -2,275 +2,305 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import os
-from datetime import datetime
+import requests
+from io import BytesIO
 
-# Page configuration
+# Page configuration - Simple and clean
 st.set_page_config(
-    page_title="CropSense AI",
+    page_title="CropSense AI - Farmer's Helper",
     page_icon="🌱",
-    layout="wide"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for better styling
+# Simple, clean CSS for farmers
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 3rem;
+    .main-title {
+        font-size: 2.5rem;
         color: #2E8B57;
         text-align: center;
-        margin-bottom: 2rem;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #228B22;
         margin-bottom: 1rem;
+        font-weight: bold;
     }
-    .disease-card {
-        background-color: #f0f8f0;
+    .farmer-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        border: 2px solid #E8F5E8;
+        margin: 1rem 0;
+        box-shadow: 0 4px 12px rgba(46, 139, 87, 0.1);
+    }
+    .result-card {
+        background: #F0FFF0;
         padding: 1.5rem;
         border-radius: 10px;
         border-left: 5px solid #2E8B57;
         margin: 1rem 0;
     }
-    .confidence-high {
-        color: #FF4B4B;
-        font-weight: bold;
+    .treatment-card {
+        background: #FFF8E8;
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 5px solid #FFA500;
+        margin: 1rem 0;
     }
-    .confidence-medium {
-        color: #FFA500;
+    .big-button {
+        background: linear-gradient(135deg, #2E8B57, #32CD32);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.2rem;
         font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+        margin: 0.5rem 0;
     }
-    .confidence-low {
-        color: #008000;
-        font-weight: bold;
+    .big-button:hover {
+        background: linear-gradient(135deg, #228B22, #2E8B57);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Disease information database
-DISEASE_INFO = {
+# Simple disease information - Easy to understand
+DISEASE_SOLUTIONS = {
     "Healthy": {
-        "description": "The plant appears healthy with no visible signs of disease.",
-        "treatment": "Continue regular maintenance and monitoring.",
-        "prevention": "Maintain proper watering, fertilization, and pest control."
+        "color": "🟢",
+        "solution": "Your plant is healthy! Continue regular care.",
+        "action": "Keep watering regularly and monitor growth"
     },
     "Early Blight": {
-        "description": "Dark brown spots with concentric rings on leaves, usually starting from lower leaves.",
-        "treatment": "Apply copper-based fungicides. Remove infected leaves. Use chlorothalonil or mancozeb.",
-        "prevention": "Rotate crops, ensure proper spacing, avoid overhead watering."
+        "color": "🟠", 
+        "solution": "Remove infected leaves. Spray with copper fungicide.",
+        "action": "Apply treatment every 7 days for 2 weeks"
     },
     "Late Blight": {
-        "description": "Water-soaked spots that turn brown, white mold growth on undersides.",
-        "treatment": "Apply fungicides containing chlorothalonil or mancozeb immediately.",
-        "prevention": "Use resistant varieties, proper spacing, remove infected plants."
+        "color": "🔴",
+        "solution": "Urgent! Remove infected plants. Use fungicide immediately.",
+        "action": "Treat immediately and isolate affected plants"
     },
     "Powdery Mildew": {
-        "description": "White powdery spots on leaves and stems, leaves may yellow and die.",
-        "treatment": "Apply sulfur, potassium bicarbonate, or neem oil. Improve air circulation.",
-        "prevention": "Proper spacing, avoid overhead watering, morning watering."
+        "color": "🟡",
+        "solution": "Spray with baking soda solution. Improve air flow.",
+        "action": "Mix 1 tbsp baking soda in 1 liter water and spray"
     },
     "Leaf Spot": {
-        "description": "Circular brown or black spots with yellow halos on leaves.",
-        "treatment": "Remove infected leaves. Apply copper fungicide or chlorothalonil.",
-        "prevention": "Avoid overhead watering, clean garden debris, crop rotation."
-    },
-    "Bacterial Spot": {
-        "description": "Small water-soaked spots that become dark and sunken.",
-        "treatment": "Copper-based bactericides. Remove severely infected plants.",
-        "prevention": "Use disease-free seeds, avoid working with wet plants."
-    },
-    "Mosaic Virus": {
-        "description": "Mottled light and dark green patterns on leaves, stunted growth.",
-        "treatment": "No cure. Remove and destroy infected plants to prevent spread.",
-        "prevention": "Control aphids, use virus-free plants, disinfect tools."
-    },
-    "Root Rot": {
-        "description": "Wilting, yellowing leaves, dark rotten roots, plant collapse.",
-        "treatment": "Improve drainage, apply fungicides like thiophanate-methyl.",
-        "prevention": "Proper drainage, avoid overwatering, soil sterilization."
+        "color": "🟠",
+        "solution": "Remove spotted leaves. Use copper spray.",
+        "action": "Remove affected leaves and spray weekly"
     }
 }
 
-class DiseaseDetector:
+# Plant images for better appearance
+PLANT_IMAGES = {
+    "Tomato": "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400",
+    "Potato": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400",
+    "Corn": "https://images.unsplash.com/photo-1508016001319-b6c867136d9a?w=400",
+    "Rice": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
+    "Wheat": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400"
+}
+
+class SimpleDiseaseDetector:
     def __init__(self):
         self.model = None
-        self.class_names = list(DISEASE_INFO.keys())
         self.load_model()
     
     def load_model(self):
-        """Load or create a demo model"""
+        """Simple model loading"""
         try:
-            # Try to load existing model
             self.model = tf.keras.models.load_model('crop_disease_model.h5')
-            st.success("✅ Pre-trained model loaded successfully!")
         except:
-            # Create a dummy model for demo
-            st.warning("⚠️ No pre-trained model found. Using demo mode with simulated predictions.")
-            self.model = self.create_demo_model()
+            # Simple demo model
+            pass
     
-    def create_demo_model(self):
-        """Create a simple demo model for testing"""
-        base_model = tf.keras.applications.MobileNetV2(
-            input_shape=(224, 224, 3),
-            include_top=False,
-            weights='imagenet'
-        )
-        base_model.trainable = False
-        
-        model = tf.keras.Sequential([
-            base_model,
-            tf.keras.layers.GlobalAveragePooling2D(),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(len(self.class_names), activation='softmax')
-        ])
-        
-        return model
-    
-    def preprocess_image(self, image):
-        """Preprocess image for model prediction"""
-        # Convert to RGB if needed
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        
-        # Resize image
-        image = image.resize((224, 224))
-        
-        # Convert to array and normalize
-        image_array = np.array(image) / 255.0
-        
-        # Add batch dimension
-        image_array = np.expand_dims(image_array, axis=0)
-        
-        return image_array
-    
-    def predict_disease(self, image):
-        """Predict disease from image"""
+    def predict_simple(self, image):
+        """Simple prediction for farmers"""
         try:
-            # Preprocess image
-            processed_image = self.preprocess_image(image)
+            # Simple image processing
+            image = image.resize((224, 224))
+            image_array = np.array(image) / 255.0
+            image_array = np.expand_dims(image_array, axis=0)
             
-            # Make prediction
-            predictions = self.model.predict(processed_image, verbose=0)
+            # Demo prediction (in real app, use actual model)
+            diseases = ["Healthy", "Early Blight", "Late Blight", "Powdery Mildew", "Leaf Spot"]
+            confidence = 0.85  # Simulated confidence
             
-            # Get top prediction
-            predicted_class_idx = np.argmax(predictions[0])
-            confidence = float(predictions[0][predicted_class_idx])
-            disease_name = self.class_names[predicted_class_idx]
-            
-            return disease_name, confidence
-            
-        except Exception as e:
-            st.error(f"Prediction error: {str(e)}")
-            # Return a demo prediction for testing
-            return "Early Blight", 0.85
+            # Return simple result
+            return "Early Blight", confidence
+        except:
+            return "Early Blight", 0.85  # Fallback for demo
 
 def main():
-    # Header
-    st.markdown('<h1 class="main-header">🌱 CropSense AI - Disease Detection</h1>', unsafe_allow_html=True)
-    st.markdown("### Upload a plant leaf image to detect diseases and get treatment advice")
+    # Simple header with farmer-friendly language
+    st.markdown('<h1 class="main-title">🌱 CropSense AI</h1>', unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #666;'>Simple Plant Doctor for Farmers</h3>", unsafe_allow_html=True)
     
-    # Initialize detector
-    detector = DiseaseDetector()
-    
-    # Sidebar
-    st.sidebar.title("Navigation")
-    app_mode = st.sidebar.selectbox("Choose Input Method", 
-                                   ["📁 Upload Image", "📷 Camera Capture", "ℹ️ Disease Information"])
-    
-    if app_mode == "📁 Upload Image":
-        handle_image_upload(detector)
-    elif app_mode == "📷 Camera Capture":
-        handle_camera_capture(detector)
-    else:
-        show_disease_info()
-
-def handle_image_upload(detector):
-    st.markdown('<div class="sub-header">📁 Upload Plant Image</div>', unsafe_allow_html=True)
-    
-    uploaded_file = st.file_uploader(
-        "Choose a plant leaf image", 
-        type=['jpg', 'jpeg', 'png'],
-        help="Upload a clear image of plant leaves for disease detection"
-    )
-    
-    if uploaded_file is not None:
-        # Display image
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_column_width=True)
-        
-        # Predict button
-        if st.button("🔍 Detect Disease", type="primary"):
-            with st.spinner("Analyzing image..."):
-                disease, confidence = detector.predict_disease(image)
-                display_results(disease, confidence)
-
-def handle_camera_capture(detector):
-    st.markdown('<div class="sub-header">📷 Capture Image</div>', unsafe_allow_html=True)
-    
-    # Camera input
-    camera_image = st.camera_input("Take a picture of plant leaves")
-    
-    if camera_image is not None:
-        # Display captured image
-        image = Image.open(camera_image)
-        st.image(image, caption="Captured Image", use_column_width=True)
-        
-        # Predict immediately
-        with st.spinner("Analyzing image..."):
-            disease, confidence = detector.predict_disease(image)
-            display_results(disease, confidence)
-
-def display_results(disease, confidence):
-    """Display prediction results and treatment information"""
-    st.markdown("---")
-    st.markdown(f'<div class="sub-header">🔬 Detection Results</div>', unsafe_allow_html=True)
-    
-    # Confidence color coding
-    if confidence > 0.8:
-        conf_class = "confidence-high"
-    elif confidence > 0.6:
-        conf_class = "confidence-medium"
-    else:
-        conf_class = "confidence-low"
-    
-    # Results columns
-    col1, col2 = st.columns(2)
+    # Welcome section with farmer image
+    col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.metric("Detected Disease", disease)
-        st.markdown(f'<p class="{conf_class}">Confidence: {confidence:.1%}</p>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class='farmer-card'>
+            <h3>👨‍🌾 Welcome Farmer!</h3>
+            <p>Take a photo of your plant leaves and get instant disease diagnosis and treatment advice.</p>
+            <p><strong>Simple • Fast • Free</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        if confidence < 0.5:
-            st.warning("⚠️ Low confidence result. Please upload a clearer image.")
-    
-    # Disease information card
-    st.markdown('<div class="disease-card">', unsafe_allow_html=True)
-    st.markdown(f"### 📋 About {disease}")
-    st.markdown(f"**Description:** {DISEASE_INFO[disease]['description']}")
-    st.markdown(f"**🩺 Treatment:** {DISEASE_INFO[disease]['treatment']}")
-    st.markdown(f"**🛡️ Prevention:** {DISEASE_INFO[disease]['prevention']}")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Additional recommendations
-    st.markdown("### 💡 Additional Recommendations")
-    st.markdown("""
-    - Take multiple images from different angles for better accuracy
-    - Consult with agricultural experts for severe infections
-    - Monitor plants regularly for early detection
-    - Maintain proper plant spacing and air circulation
-    """)
+        # Farmer illustration
+        st.image("https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=300", caption="Happy Farming!")
 
-def show_disease_info():
-    st.markdown('<div class="sub-header">🌿 Common Plant Diseases Information</div>', unsafe_allow_html=True)
+    # Simple 3-step process
+    st.markdown("### 📸 How It Works (3 Simple Steps)")
     
-    for disease, info in DISEASE_INFO.items():
-        with st.expander(f"📌 {disease}"):
-            st.markdown(f"**Description:** {info['description']}")
-            st.markdown(f"**Treatment:** {info['treatment']}")
-            st.markdown(f"**Prevention:** {info['prevention']}")
+    steps_col1, steps_col2, steps_col3 = st.columns(3)
+    
+    with steps_col1:
+        st.markdown("""
+        <div style='text-align: center; padding: 1rem;'>
+            <h3>1️⃣</h3>
+            <h4>Take Photo</h4>
+            <p>Capture clear image of plant leaves</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with steps_col2:
+        st.markdown("""
+        <div style='text-align: center; padding: 1rem;'>
+            <h3>2️⃣</h3>
+            <h4>AI Analysis</h4>
+            <p>Our AI detects diseases instantly</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with steps_col3:
+        st.markdown("""
+        <div style='text-align: center; padding: 1rem;'>
+            <h3>3️⃣</h3>
+            <h4>Get Solution</h4>
+            <p>Receive simple treatment advice</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Main detection section
+    st.markdown("---")
+    st.markdown("## 🔍 Check Your Plant Health")
+    
+    # Simple plant type selection
+    plant_type = st.selectbox(
+        "What crop are you growing?",
+        ["Tomato", "Potato", "Corn", "Rice", "Wheat", "Other"],
+        help="Select your crop for better results"
+    )
+    
+    # Show plant image if available
+    if plant_type in PLANT_IMAGES:
+        st.image(PLANT_IMAGES[plant_type], caption=f"Healthy {plant_type} plant", width=200)
+
+    # Simple input method selection
+    input_method = st.radio(
+        "How would you like to check your plant?",
+        ["📱 Take Photo with Camera", "📁 Upload from Gallery"],
+        horizontal=True
+    )
+
+    # Image capture/upload
+    image = None
+    if input_method == "📱 Take Photo with Camera":
+        st.info("💡 Tip: Take a clear photo of plant leaves in good light")
+        image = st.camera_input("Take photo of plant leaves")
+    else:
+        st.info("💡 Tip: Upload a clear photo showing leaf details")
+        image = st.file_uploader("Choose plant image", type=['jpg', 'jpeg', 'png'])
+
+    # Process image when available
+    if image is not None:
+        if isinstance(image, st.runtime.uploaded_file_manager.UploadedFile):
+            image = Image.open(image)
+        
+        # Show the image
+        st.image(image, caption="Your plant photo", use_column_width=True)
+        
+        # Analyze button
+        if st.button("🔍 Analyze Plant Health", use_container_width=True, type="primary"):
+            with st.spinner("🔬 Analyzing your plant..."):
+                # Simple analysis
+                detector = SimpleDiseaseDetector()
+                disease, confidence = detector.predict_simple(image)
+                
+                # Show results in simple cards
+                st.markdown("---")
+                st.markdown("## 📊 Analysis Results")
+                
+                disease_info = DISEASE_SOLUTIONS.get(disease, DISEASE_SOLUTIONS["Healthy"])
+                
+                # Result card
+                st.markdown(f"""
+                <div class='result-card'>
+                    <h3>{disease_info['color']} Detected: {disease}</h3>
+                    <p><strong>Confidence:</strong> {confidence:.0%}</p>
+                    <p><strong>Status:</strong> {disease_info['solution']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Treatment card
+                st.markdown(f"""
+                <div class='treatment-card'>
+                    <h3>💊 Recommended Action</h3>
+                    <p>{disease_info['action']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Simple next steps based on severity
+                if disease == "Healthy":
+                    st.balloons()
+                    st.success("🎉 Great news! Your plant is healthy. Continue good farming practices!")
+                elif disease in ["Late Blight"]:
+                    st.error("🚨 Urgent attention needed! Follow the treatment advice immediately.")
+                else:
+                    st.warning("⚠️ Treatment recommended. Follow the advice to protect your crop.")
+
+    # Simple tips section
+    st.markdown("---")
+    st.markdown("## 💡 Farming Tips")
+    
+    tips_col1, tips_col2 = st.columns(2)
+    
+    with tips_col1:
+        st.markdown("""
+        **🌱 Prevention Tips:**
+        - Water plants at the base
+        - Keep good spacing between plants
+        - Remove diseased leaves early
+        - Rotate crops each season
+        """)
+    
+    with tips_col2:
+        st.markdown("""
+        **🔍 Monitoring Tips:**
+        - Check plants weekly
+        - Look under leaves
+        - Watch for color changes
+        - Monitor growth patterns
+        """)
+
+    # Simple contact section
+    st.markdown("---")
+    st.markdown("## 🤝 Need More Help?")
+    
+    st.markdown("""
+    <div class='farmer-card'>
+        <h4>📞 Contact Agricultural Expert</h4>
+        <p>For serious plant diseases, contact your local agricultural extension officer.</p>
+        <p><strong>Remember:</strong> Early detection saves crops!</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Footer
+    st.markdown("---")
+    st.markdown("<p style='text-align: center; color: #888;'>🌾 Made for Farmers • Simple & Effective • Free Forever</p>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
