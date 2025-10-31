@@ -84,7 +84,7 @@ def create_demo_model():
     return model
 
 if __name__ == "__main__":
-    print("🌱 CropSense AI - Model Training")
+    print("🌱 Crop Disease Detection Model Training")
     print("=" * 50)
     
     # Check if TensorFlow is properly installed
