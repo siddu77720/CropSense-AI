@@ -77,7 +77,7 @@ DISEASE_INFO = {
 }
 
 class DiseaseDetector:
-    def __init__(self):
+    def _init_(self):
         self.model = None
         self.class_names = list(DISEASE_INFO.keys())
         self.load_model()
@@ -126,7 +126,7 @@ class DiseaseDetector:
         # Resize image
         image = image.resize((224, 224))
         
-        # Convert to array and normalize
+        # Convert to array and normalizedf
         image_array = np.array(image) / 255.0
         
         # Add batch dimension
@@ -243,9 +243,9 @@ def display_results(disease, confidence):
     # Disease information card
     st.markdown('<div class="disease-card">', unsafe_allow_html=True)
     st.markdown(f"### 📋 About {disease}")
-    st.markdown(f"**Description:** {DISEASE_INFO[disease]['description']}")
-    st.markdown(f"**🩺 Treatment:** {DISEASE_INFO[disease]['treatment']}")
-    st.markdown(f"**🛡️ Prevention:** {DISEASE_INFO[disease]['prevention']}")
+    st.markdown(f"*Description:* {DISEASE_INFO[disease]['description']}")
+    st.markdown(f"*🩺 Treatment:* {DISEASE_INFO[disease]['treatment']}")
+    st.markdown(f"*🛡️ Prevention:* {DISEASE_INFO[disease]['prevention']}")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Additional recommendations
@@ -262,9 +262,9 @@ def show_disease_info():
     
     for disease, info in DISEASE_INFO.items():
         with st.expander(f"📌 {disease}"):
-            st.markdown(f"**Description:** {info['description']}")
-            st.markdown(f"**Treatment:** {info['treatment']}")
-            st.markdown(f"**Prevention:** {info['prevention']}")
+            st.markdown(f"*Description:* {info['description']}")
+            st.markdown(f"*Treatment:* {info['treatment']}")
+            st.markdown(f"*Prevention:* {info['prevention']}")
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
