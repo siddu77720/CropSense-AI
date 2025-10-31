@@ -13,7 +13,6 @@ st.set_page_config(
 
 # Custom CSS for better styling
 # Custom CSS with semi-transparent background
-# Custom CSS with semi-transparent background
 st.markdown("""
 <style>
     .stApp {
@@ -38,6 +37,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
 # Disease information database
 DISEASE_INFO = {
     "Healthy": {
